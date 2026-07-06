@@ -8,17 +8,19 @@ const {
   deleteEmployee,
 } = require("../controllers/employee-controller");
 
+const multerUpload = require("../middlewares/multer-middleware");
+
 const router = express.Router();
 
 router
   .route("/")
   .get(getAllEmployees)
-  .post(createEmployee);
+  .post(multerUpload.single("imageURL"), createEmployee);
 
 router
   .route("/:id")
   .get(getEmployeeById)
-  .patch(updateEmployee)
+  .patch(multerUpload.single("imageURL"), updateEmployee)
   .delete(deleteEmployee);
 
 module.exports = router;

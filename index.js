@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const dotenv = require("dotenv");
 
 const connectDB = require("./config/db-connect");
@@ -23,6 +24,8 @@ app.use(express.json());
 connectDB();
 
 // Routes
+//Serve uploaded images
+app.use("/api/v1/uploads",express.static(path.join(__dirname, "uploads")));
 app.use("/api/v1/employees", employeeRoutes);
 app.use("/api/v1/departments", departmentRoutes);
 app.use("/api/v1/attendance", attendanceRoutes);

@@ -1,9 +1,28 @@
 const Employee = require("../models/employee-model");
+const deleteUploadedFile = require("../utils/delete-uploaded-file");
 
 // Get all employees
 const getAllEmployees = async (req, res) => {
   try {
-    const employees = await Employee.find();
+    const excludeFields = ["__v", "createdAt", "updatedAt", "page", "limit", "sort", "fields"];
+    const excludeQuery = { ...req.query };
+    excludeFields.forEach((field) => delete excludeQuery[field]);
+
+    Object.keys(excludeQuery).forEach((key) => {
+      if (/^(.+)\[(gte|gt|lte|lt)\]$/.test(key)) {
+        delete excludeQuery[key];
+      }
+    });
+    console.log("Query parameters:", req.query); // Log the query parameters for debugging
+    console.log("Excluded query parameters:", excludeQuery); // Log the excluded query parameters for debugging
+
+    const range = queryRange(req.query);
+
+    const employees = await Employee.find({
+      ...excludeQuery,
+      ...range,
+    });
+
 
     res.status(200).json({
       status: "success",
@@ -31,7 +50,13 @@ const createEmployee = async (req, res) => {
       req.body.status = req.body.status.toLowerCase();
     }
 
-    const employee = await Employee.create(req.body);
+    console.log("Request body:", req.body);
+    console.log("Uploaded file:", req.file);
+
+    const employee = await Employee.create({
+      ...req.body,
+      imageURL: req.file ? req.file.filename : undefined,
+    });
 
     res.status(201).json({
       status: "success",
@@ -41,6 +66,12 @@ const createEmployee = async (req, res) => {
       },
     });
   } catch (error) {
+
+    // Delete uploaded image if database operation fails
+    if (req.file) {
+      deleteUploadedFile("employees", req.file.filename);
+    }
+
     res.status(400).json({
       status: "error",
       message: `Failed to create employee: ${error.message}`,
@@ -85,14 +116,7 @@ const updateEmployee = async (req, res) => {
       req.body.status = req.body.status.toLowerCase();
     }
 
-    const employee = await Employee.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    const employee = await Employee.findById(req.params.id);
 
     if (!employee) {
       return res.status(404).json({
@@ -101,11 +125,28 @@ const updateEmployee = async (req, res) => {
       });
     }
 
+    if (req.file) {
+      if (employee.imageURL) {
+        deleteUploadedFile("employees", employee.imageURL);
+      }
+
+      req.body.imageURL = req.file.filename;
+    }
+
+    const updatedEmployee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
+
     res.status(200).json({
       status: "success",
       message: "Employee updated successfully",
       data: {
-        employee,
+        employee: updatedEmployee,
       },
     });
   } catch (error) {
@@ -119,7 +160,7 @@ const updateEmployee = async (req, res) => {
 // Delete employee
 const deleteEmployee = async (req, res) => {
   try {
-    const employee = await Employee.findByIdAndDelete(req.params.id);
+    const employee = await Employee.findById(req.params.id);
 
     if (!employee) {
       return res.status(404).json({
@@ -127,6 +168,12 @@ const deleteEmployee = async (req, res) => {
         message: "Employee not found",
       });
     }
+
+    if (employee.imageURL) {
+      deleteUploadedFile("employees", employee.imageURL);
+    }
+
+    await Employee.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       status: "success",
@@ -142,6 +189,23 @@ const deleteEmployee = async (req, res) => {
     });
   }
 };
+
+function queryRange(query) {
+  const filtered = {};
+  for (let key in query) {
+    const value = query[key];
+    const match = key.match(/^(.+)\[(gte|gt|lte|lt)\]$/);
+    if (match) {
+      const field = match[1];
+      const operator = `$${match[2]}`;
+      if (!filtered[field]) {
+        filtered[field] = {};
+      }
+      filtered[field][operator] = Number(value);
+    }
+  }
+  return filtered;
+}
 
 module.exports = {
   getAllEmployees,
