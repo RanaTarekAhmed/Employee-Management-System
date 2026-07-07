@@ -1,6 +1,6 @@
 # Employee Management System
 
-A RESTful API built with **Node.js**, **Express.js**, **MongoDB (Mongoose)**, and **Multer** for managing employees and HR operations.
+A RESTful API built with **Node.js**, **Express.js**, **MongoDB (Mongoose)**, **JWT**, **bcryptjs**, and **Multer** for managing employees and HR operations.
 
 ---
 
@@ -8,11 +8,24 @@ A RESTful API built with **Node.js**, **Express.js**, **MongoDB (Mongoose)**, an
 
 The Employee Management System is a backend REST API that manages employee records and HR-related operations. It provides CRUD functionality for employees along with additional modules for departments, attendance, leave management, payroll, performance, and notifications.
 
+The project also includes a complete authentication and authorization system that allows users to register, log in securely, access protected routes using JWT, and restrict actions based on user roles.
+
 The Employee module has been enhanced with professional backend features including filtering, pagination, sorting, and image upload.
 
 ---
 
 # 🚀 Features
+
+## Authentication Module
+
+- User Registration (Signup)
+- User Login (Signin)
+- Password Hashing using bcryptjs
+- JWT Authentication
+- Protected Routes
+- Role-Based Authorization (Admin / Employee)
+- View Logged-in User Profile
+- Update Logged-in User Profile
 
 ## Employee Module
 
@@ -41,9 +54,12 @@ The Employee module has been enhanced with professional backend features includi
 - Express.js
 - MongoDB Atlas
 - Mongoose
+- JWT (jsonwebtoken)
+- bcryptjs
 - Multer
 - Dotenv
 - Nodemon
+- Postman
 
 ---
 
@@ -56,6 +72,8 @@ employee-management-system/
 │   └── db-connect.js
 │
 ├── controllers/
+│   ├── auth-controller.js
+│   ├── user-controller.js
 │   ├── employee-controller.js
 │   ├── department-controller.js
 │   ├── attendance-controller.js
@@ -65,9 +83,12 @@ employee-management-system/
 │   └── notification-controller.js
 │
 ├── middlewares/
+│   ├── authentication-middleware.js
+│   ├── authorization-middleware.js
 │   └── multer-middleware.js
 │
 ├── models/
+│   ├── user-model.js
 │   ├── employee-model.js
 │   ├── department-model.js
 │   ├── attendance-model.js
@@ -77,6 +98,8 @@ employee-management-system/
 │   └── notification-model.js
 │
 ├── routes/
+│   ├── auth-routes.js
+│   ├── user-routes.js
 │   ├── employee-routes.js
 │   ├── department-routes.js
 │   ├── attendance-routes.js
@@ -86,9 +109,11 @@ employee-management-system/
 │   └── notification-routes.js
 │
 ├── uploads/
-│   └── employees/
+│   ├── employees/
+│   └── users/
 │
 ├── utils/
+│   ├── get-jwt.js
 │   └── delete-uploaded-file.js
 │
 ├── .env.example
@@ -101,7 +126,28 @@ employee-management-system/
 
 ---
 
-# 🎯 Chosen Entity
+# 🎯 Chosen Entities
+
+## User
+
+The User entity is responsible for authentication and authorization.
+
+Each user contains:
+
+- First Name
+- Last Name
+- Email
+- Password
+- Phone Number
+- Role
+- Profile Image
+
+### User Roles
+
+- Admin
+- Employee
+
+---
 
 ## Employee
 
@@ -150,6 +196,10 @@ PORT=5000
 MONGODB_URI=your_mongodb_connection_string
 
 DB_NAME=employee_management_system
+
+JWT_SECRET=your_jwt_secret
+
+JWT_EXPIRES_IN=7d
 ```
 
 ## 5. Start the server
@@ -167,6 +217,36 @@ http://localhost:5000
 ---
 
 # 🧪 API Usage Examples
+
+## User Signup
+
+Register a new user and receive a JWT token.
+
+---
+
+## User Signin
+
+Authenticate an existing user and receive a JWT token.
+
+---
+
+## User Profile
+
+Access the authenticated user's profile.
+
+Authorization Header:
+
+```
+Bearer <JWT_TOKEN>
+```
+
+---
+
+## Update Profile
+
+Update the authenticated user's profile information.
+
+---
 
 ## Create Employee
 
@@ -250,6 +330,10 @@ Delete an employee and remove the associated profile image from storage.
 
 | Method | Endpoint | Description |
 |---------|----------|-------------|
+| POST | `/api/v1/auth/signup` | Register User |
+| POST | `/api/v1/auth/signin` | Login User |
+| GET | `/api/v1/users/profile` | Get Logged-in User Profile |
+| PATCH | `/api/v1/users/profile` | Update Logged-in User Profile |
 | POST | `/api/v1/employees` | Create Employee |
 | GET | `/api/v1/employees` | Get All Employees |
 | GET | `/api/v1/employees/:id` | Get Employee by ID |
@@ -262,7 +346,18 @@ Delete an employee and remove the associated profile image from storage.
 
 The API was tested using **Postman**.
 
-The following features were successfully tested:
+### Authentication Tests
+
+- User Signup
+- User Signin
+- Login with Invalid Credentials
+- Access Protected Routes using JWT
+- Unauthorized Access (401)
+- Forbidden Access (403)
+- Admin Authorization
+- Employee Authorization
+
+### Employee Module Tests
 
 - Create Employee with Image Upload
 - Get All Employees
@@ -282,12 +377,15 @@ The following features were successfully tested:
 
 Backend Developer
 
-**Skills**
+### Skills
 
 - Node.js
 - Express.js
 - MongoDB
 - Mongoose
 - REST APIs
+- JWT Authentication
+- Authorization
+- bcryptjs
 - Multer
 - Postman
