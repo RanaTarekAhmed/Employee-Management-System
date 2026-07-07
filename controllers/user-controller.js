@@ -11,6 +11,8 @@ const getMyProfile = async (req, res) => {
       });
     }
 
+    user.password = undefined;
+
     res.status(200).json({
       status: "success",
       data: {
@@ -41,7 +43,6 @@ const updateMyProfile = async (req, res) => {
       lastName,
       email,
       phone,
-      role,
     } = req.body;
 
     if (firstName) user.firstName = firstName;
@@ -49,10 +50,9 @@ const updateMyProfile = async (req, res) => {
     if (email) user.email = email;
     if (phone) user.phone = phone;
 
-    // Allow role update only if you want this behavior.
-    if (role) user.role = role;
-
     await user.save();
+
+    user.password = undefined;
 
     res.status(200).json({
       status: "success",
