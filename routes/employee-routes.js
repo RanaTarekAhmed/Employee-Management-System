@@ -9,18 +9,34 @@ const {
 } = require("../controllers/employee-controller");
 
 const multerUpload = require("../middlewares/multer-middleware");
+const authenticationMiddleware = require("../middlewares/authentication-middleware");
+const authorizationMiddleware = require("../middlewares/authorization-middleware");
 
 const router = express.Router();
 
 router
   .route("/")
   .get(getAllEmployees)
-  .post(multerUpload.single("imageURL"), createEmployee);
+  .post(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    multerUpload.single("imageURL"),
+    createEmployee
+  );
 
 router
   .route("/:id")
   .get(getEmployeeById)
-  .patch(multerUpload.single("imageURL"), updateEmployee)
-  .delete(deleteEmployee);
+  .patch(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    multerUpload.single("imageURL"),
+    updateEmployee
+  )
+  .delete(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    deleteEmployee
+  );
 
 module.exports = router;

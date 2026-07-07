@@ -12,6 +12,7 @@ const payrollRoutes = require("./routes/payroll-routes");
 const notificationRoutes = require("./routes/notification-routes");
 const performanceRoutes = require("./routes/performance-routes");
 const authRoutes = require("./routes/auth-routes");
+const userRoutes = require("./routes/user-routes");
 
 dotenv.config();
 
@@ -34,7 +35,7 @@ app.use("/api/v1/payroll", payrollRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/performance", performanceRoutes);
 app.use("/api/v1/auth", authRoutes);
-
+app.use("/api/v1/users", userRoutes);
 // Home Route
 app.get("/", (req, res) => {
   res.status(200).json({
