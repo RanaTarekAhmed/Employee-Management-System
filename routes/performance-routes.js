@@ -8,17 +8,32 @@ const {
   deletePerformance,
 } = require("../controllers/performance-controller");
 
+const authenticationMiddleware = require("../middlewares/authentication-middleware");
+const authorizationMiddleware = require("../middlewares/authorization-middleware");
+
 const router = express.Router();
 
 router
   .route("/")
   .get(getAllPerformances)
-  .post(createPerformance);
+  .post(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    createPerformance
+  );
 
 router
   .route("/:id")
   .get(getPerformanceById)
-  .patch(updatePerformance)
-  .delete(deletePerformance);
+  .patch(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    updatePerformance
+  )
+  .delete(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    deletePerformance
+  );
 
 module.exports = router;

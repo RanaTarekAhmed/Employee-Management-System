@@ -39,21 +39,10 @@ const employeeSchema = new mongoose.Schema(
     },
 
     department: {
-      type: String,
-      required: [true, "Department is required"],
-      enum: {
-        values: [
-          "hr",
-          "it",
-          "finance",
-          "marketing",
-          "sales",
-          "operations",
-        ],
-        message:
-          "Department must be one of: hr, it, finance, marketing, sales, operations",
-      },
-    },
+  type: String,
+  required: [true, "Department is required"],
+  trim: true,
+},
 
     salary: {
       type: Number,

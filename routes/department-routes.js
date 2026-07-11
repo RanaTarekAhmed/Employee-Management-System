@@ -8,17 +8,32 @@ const {
   deleteDepartment,
 } = require("../controllers/department-controller");
 
+const authenticationMiddleware = require("../middlewares/authentication-middleware");
+const authorizationMiddleware = require("../middlewares/authorization-middleware");
+
 const router = express.Router();
 
 router
   .route("/")
   .get(getAllDepartments)
-  .post(createDepartment);
+  .post(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    createDepartment
+  );
 
 router
   .route("/:id")
   .get(getDepartmentById)
-  .patch(updateDepartment)
-  .delete(deleteDepartment);
+  .patch(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    updateDepartment
+  )
+  .delete(
+    authenticationMiddleware,
+    authorizationMiddleware("admin"),
+    deleteDepartment
+  );
 
 module.exports = router;

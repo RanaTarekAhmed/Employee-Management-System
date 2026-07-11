@@ -22,8 +22,6 @@ const performanceSchema = new mongoose.Schema(
     score: {
       type: Number,
       required: [true, "Performance score is required"],
-      min: [1, "Score must be at least 1"],
-      max: [10, "Score must be at most 10"],
     },
 
     goals: {

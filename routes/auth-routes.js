@@ -18,5 +18,7 @@ const router = express.Router();
         // const upload = multer({ storage: storage });
 
 router.post('/signup', multerUpload.single('imageURL'), authController.signup);
+router.post('/register', multerUpload.single('imageURL'), authController.signup);
 router.post('/signin', authController.signin);
+router.post("/login", authController.signin);
 module.exports = router;

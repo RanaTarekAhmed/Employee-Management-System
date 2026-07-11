@@ -3,14 +3,66 @@ const Performance = require("../models/performance-model");
 // Get all performance reviews
 const getAllPerformances = async (req, res) => {
   try {
-    const performances = await Performance.find().populate(
-      "employee",
-      "firstName lastName email department"
-    );
+    const excludeFields = [
+      "__v",
+      "createdAt",
+      "updatedAt",
+      "page",
+      "limit",
+      "sort",
+      "fields",
+    ];
+
+    const excludeQuery = { ...req.query };
+
+    excludeFields.forEach((field) => delete excludeQuery[field]);
+
+    Object.keys(excludeQuery).forEach((key) => {
+      if (/^(.+)\[(gte|gt|lte|lt)\]$/.test(key)) {
+        delete excludeQuery[key];
+      }
+    });
+
+    console.log("Query parameters:", req.query);
+    console.log("Excluded query parameters:", excludeQuery);
+
+    const range = queryRange(req.query);
+
+    let query = Performance.find({
+      ...excludeQuery,
+      ...range,
+    }).populate("employee", "firstName lastName email department");
+
+    // Sorting
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(",").join(" ");
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort("-createdAt");
+    }
+
+    // Field Selection
+    if (req.query.fields) {
+      const fields = req.query.fields.split(",").join(" ");
+      query = query.select(fields);
+    } else {
+      query = query.select("-__v");
+    }
+
+    // Pagination
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    const performances = await query;
 
     res.status(200).json({
       status: "success",
       count: performances.length,
+      page,
+      results: performances.length,
       data: {
         performances,
       },
@@ -26,6 +78,8 @@ const getAllPerformances = async (req, res) => {
 // Create performance review
 const createPerformance = async (req, res) => {
   try {
+    console.log("Request body:", req.body);
+
     const performance = await Performance.create(req.body);
 
     res.status(201).json({
@@ -53,7 +107,7 @@ const getPerformanceById = async (req, res) => {
 
     if (!performance) {
       return res.status(404).json({
-        status: "fail",
+        status: "error",
         message: "Performance review not found",
       });
     }
@@ -67,7 +121,7 @@ const getPerformanceById = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "error",
-      message: error.message,
+      message: `Failed to fetch performance review: ${error.message}`,
     });
   }
 };
@@ -75,33 +129,35 @@ const getPerformanceById = async (req, res) => {
 // Update performance
 const updatePerformance = async (req, res) => {
   try {
-    const performance = await Performance.findByIdAndUpdate(
+    const performance = await Performance.findById(req.params.id);
+
+    if (!performance) {
+      return res.status(404).json({
+        status: "error",
+        message: "Performance review not found",
+      });
+    }
+
+    const updatedPerformance = await Performance.findByIdAndUpdate(
       req.params.id,
       req.body,
       {
         new: true,
         runValidators: true,
       }
-    );
-
-    if (!performance) {
-      return res.status(404).json({
-        status: "fail",
-        message: "Performance review not found",
-      });
-    }
+    ).populate("employee", "firstName lastName email department");
 
     res.status(200).json({
       status: "success",
       message: "Performance updated successfully",
       data: {
-        performance,
+        performance: updatedPerformance,
       },
     });
   } catch (error) {
     res.status(400).json({
       status: "error",
-      message: error.message,
+      message: `Failed to update performance: ${error.message}`,
     });
   }
 };
@@ -109,14 +165,19 @@ const updatePerformance = async (req, res) => {
 // Delete performance
 const deletePerformance = async (req, res) => {
   try {
-    const performance = await Performance.findByIdAndDelete(req.params.id);
+    const performance = await Performance.findById(req.params.id).populate(
+      "employee",
+      "firstName lastName email department"
+    );
 
     if (!performance) {
       return res.status(404).json({
-        status: "fail",
+        status: "error",
         message: "Performance review not found",
       });
     }
+
+    await Performance.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       status: "success",
@@ -128,10 +189,33 @@ const deletePerformance = async (req, res) => {
   } catch (error) {
     res.status(400).json({
       status: "error",
-      message: error.message,
+      message: `Failed to delete performance: ${error.message}`,
     });
   }
 };
+
+// Range Query Helper
+function queryRange(query) {
+  const filtered = {};
+
+  for (let key in query) {
+    const value = query[key];
+    const match = key.match(/^(.+)\[(gte|gt|lte|lt)\]$/);
+
+    if (match) {
+      const field = match[1];
+      const operator = `$${match[2]}`;
+
+      if (!filtered[field]) {
+        filtered[field] = {};
+      }
+
+      filtered[field][operator] = Number(value);
+    }
+  }
+
+  return filtered;
+}
 
 module.exports = {
   getAllPerformances,

@@ -19,7 +19,8 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, cb) {
         const extension = file.mimetype.split("/")[1];
-        let fileName = "";
+        let fileName = `file-${Date.now()}.${extension}`;
+
         if (req.baseUrl.includes("courses")) {
             fileName = `course-${Date.now()}.${extension}`;
         } else if (req.baseUrl.includes("users") || req.baseUrl.includes("auth")) {

@@ -4,7 +4,16 @@ const deleteUploadedFile = require("../utils/delete-uploaded-file");
 // Get all employees
 const getAllEmployees = async (req, res) => {
   try {
-    const excludeFields = ["__v", "createdAt", "updatedAt", "page", "limit", "sort", "fields"];
+    const excludeFields = [
+      "__v",
+      "createdAt",
+      "updatedAt",
+      "page",
+      "limit",
+      "sort",
+      "fields",
+    ];
+
     const excludeQuery = { ...req.query };
     excludeFields.forEach((field) => delete excludeQuery[field]);
 
@@ -13,20 +22,46 @@ const getAllEmployees = async (req, res) => {
         delete excludeQuery[key];
       }
     });
-    console.log("Query parameters:", req.query); // Log the query parameters for debugging
-    console.log("Excluded query parameters:", excludeQuery); // Log the excluded query parameters for debugging
+
+    console.log("Query parameters:", req.query);
+    console.log("Excluded query parameters:", excludeQuery);
 
     const range = queryRange(req.query);
 
-    const employees = await Employee.find({
+    let query = Employee.find({
       ...excludeQuery,
       ...range,
     });
 
+    // Sorting
+    if (req.query.sort) {
+      const sortBy = req.query.sort.split(",").join(" ");
+      query = query.sort(sortBy);
+    } else {
+      query = query.sort("-createdAt");
+    }
+
+    // Field Selection
+    if (req.query.fields) {
+      const fields = req.query.fields.split(",").join(" ");
+      query = query.select(fields);
+    } else {
+      query = query.select("-__v");
+    }
+
+    // Pagination
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    query = query.skip(skip).limit(limit);
+
+    const employees = await query;
 
     res.status(200).json({
       status: "success",
       count: employees.length,
+      page,
       data: {
         employees,
       },
@@ -66,7 +101,6 @@ const createEmployee = async (req, res) => {
       },
     });
   } catch (error) {
-
     // Delete uploaded image if database operation fails
     if (req.file) {
       deleteUploadedFile("employees", req.file.filename);
@@ -192,18 +226,23 @@ const deleteEmployee = async (req, res) => {
 
 function queryRange(query) {
   const filtered = {};
+
   for (let key in query) {
     const value = query[key];
     const match = key.match(/^(.+)\[(gte|gt|lte|lt)\]$/);
+
     if (match) {
       const field = match[1];
       const operator = `$${match[2]}`;
+
       if (!filtered[field]) {
         filtered[field] = {};
       }
+
       filtered[field][operator] = Number(value);
     }
   }
+
   return filtered;
 }
 
